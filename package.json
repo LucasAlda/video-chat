@@ -4,6 +4,7 @@
   "description": "Video Chat designed to replace free discord in its limitations",
   "main": "src/index.js",
   "scripts": {
+    "heroku": "heroku create",
     "start": "node index.js",
     "peer": "peerjs --port 3001",
     "startDev": "nodemon index.js",
@@ -15,6 +16,7 @@
   "dependencies": {
     "ejs": "^3.1.5",
     "express": "^4.17.1",
+    "heroku": "^7.42.13",
     "peer": "^0.5.3",
     "socket.io": "^2.3.0",
     "uuid": "^8.3.0",
