@@ -1,0 +1,26 @@
+{
+  "name": "video-chat",
+  "version": "1.0.0",
+  "description": "Video Chat designed to replace free discord in its limitations",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node index.js",
+    "peer": "peerjs --port 3001",
+    "startDev": "nodemon index.js",
+    "vercel": "vercel",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "LucasAlda",
+  "license": "MIT",
+  "dependencies": {
+    "ejs": "^3.1.5",
+    "express": "^4.17.1",
+    "peer": "^0.5.3",
+    "socket.io": "^2.3.0",
+    "uuid": "^8.3.0",
+    "vercel": "^20.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
