@@ -1,5 +1,6 @@
 const socket = io("/");
 var myPeer = new Peer();
+var screenPeer = new Peer();
 const callList = [];
 let users = [];
 
@@ -10,11 +11,19 @@ myVideo.muted = true;
 const peers = {};
 const userConfig = { name: window.localStorage.getItem("name") || "John Doe", video: true, audio: true };
 
+navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).then((stream) => {
+  users.forEach((user) => {
+    if (user.id !== userConfig.id) {
+      const call = myPeer.call(user.id, stream);
+    }
+  });
+});
+
 navigator.mediaDevices
-  .getDisplayMedia({
+  .getUserMedia({
     video: {
-      width: { ideal: 1920, max: 1920 },
-      height: { ideal: 1080, max: 1080 },
+      width: { ideal: 1280, max: 1920 },
+      height: { ideal: 720, max: 1080 },
     },
     audio: true,
   })
@@ -56,8 +65,6 @@ socket.on("user-disconnected", (userId) => {
 function connectToNewUser(newUserConfig, stream) {
   console.log("conectando a usuario: " + newUserConfig.name);
   const call = myPeer.call(newUserConfig.id, stream);
-  const video = document.createElement("video");
-  peers[newUserConfig.id] = call;
 
   users.push({ ...newUserConfig, call: call });
   renderUsers();
@@ -70,8 +77,6 @@ function connectToNewUser(newUserConfig, stream) {
   call.on("close", () => {
     users = users.filter((usr) => usr.id !== newUserConfig.id);
     console.log(users);
-    video.remove();
-    callList.filter((cl) => cl !== call.peer);
   });
 }
 
