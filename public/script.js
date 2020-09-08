@@ -1,6 +1,8 @@
 const socket = io("/");
-const videoGrid = document.getElementById("video-grid");
 var myPeer = new Peer();
+
+let myVideoStream;
+const videoGrid = document.getElementById("video-grid");
 const myVideo = document.createElement("video");
 myVideo.muted = true;
 const peers = {};
@@ -14,6 +16,7 @@ navigator.mediaDevices
     audio: true,
   })
   .then((stream) => {
+    myVideoStream = stream;
     addVideoStream(myVideo, stream);
 
     myPeer.on("call", (call) => {
