@@ -8,7 +8,7 @@ const videoGrid = document.getElementById("video-grid");
 const myVideo = document.createElement("video");
 myVideo.muted = true;
 const peers = {};
-const userConfig = { name: window.localStorage.getItem("name") || "John Doe", video: true, audio: true, me: true };
+const userConfig = { name: window.localStorage.getItem("name") || "John Doe", video: true, audio: true };
 
 navigator.mediaDevices
   .getUserMedia({
@@ -45,8 +45,12 @@ myPeer.on("open", (id) => {
 });
 
 socket.on("user-disconnected", (userId) => {
-  console.log(userId);
-  if (peers[userId]) peers[userId].close();
+  const goneUser = users.findIndex((user) => user.id === userId);
+  console.log(goneUser);
+  if (goneUser) {
+    users[goneUser].call.close();
+    users.splice(goneUser, 1);
+  }
 });
 
 function connectToNewUser(newUserConfig, stream) {
@@ -104,7 +108,7 @@ function renderUsers() {
       video.addEventListener("loadedmetadata", () => {
         video.play();
       });
-      if (user.me) {
+      if (user.id === userConfig.id) {
         video.muted = true;
       }
     }
