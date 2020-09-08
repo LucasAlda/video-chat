@@ -166,6 +166,19 @@ body {
   grid-auto-rows: 300px;
 }
 
+#video-grid .user {
+  position: relative;
+  margin: 5px;
+}
+
+#video-grid .user .name {
+  position: absolute;
+  left: 12px;
+  bottom: 5px;
+  color: #fff;
+  font-size: 12px;
+}
+
 video {
   width: 100%;
   height: 100%;

@@ -3,6 +3,7 @@ const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
 const { v4: uuidV4 } = require("uuid");
+const users = {};
 
 app.set("view engine", "ejs");
 app.use(express.static("public"));
@@ -16,12 +17,15 @@ app.get("/:room", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  socket.on("join-room", (roomId, userId) => {
+  socket.on("join-room", (roomId, userConfig) => {
     socket.join(roomId);
-    socket.to(roomId).broadcast.emit("user-connected", userId);
+    if (!users[roomId]) users[roomId] = [];
+    users[roomId].push(userConfig);
+    socket.to(roomId).broadcast.emit("user-connected", userConfig);
+    console.log(users);
 
     socket.on("disconnect", () => {
-      socket.to(roomId).broadcast.emit("user-disconnected", userId);
+      socket.to(roomId).broadcast.emit("user-disconnected", userConfig.id);
     });
   });
 });
