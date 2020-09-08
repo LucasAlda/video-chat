@@ -65,3 +65,9 @@ function addVideoStream(video, stream) {
   });
   videoGrid.append(video);
 }
+
+function muteOrUnmute() {
+  const enabled = myVideoStream.getAudioTracks()[0].enabled;
+  if (enabled) myVideoStream.getAudioTracks()[0].enabled = false;
+  else myVideoStream.getAudioTracks()[0].enabled = true;
+}

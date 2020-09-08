@@ -1,5 +1,6 @@
 body {
   margin: 0;
+  overflow: hidden;
 }
 
 * {
@@ -8,13 +9,21 @@ body {
 
 .container {
   height: 100vh;
-  display: flex;
+  display: block;
+  overflow: hidden;
 }
 
 .main {
-  flex: 0.8;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: all 0.4s ease-in-out;
   display: flex;
   flex-direction: column;
+}
+
+.open-sidebar .main {
+  width: calc(100% - 320px);
 }
 
 .main-videos {
@@ -76,11 +85,23 @@ body {
 }
 
 .sidebar {
-  flex: 0.2;
+  visibility: hidden;
+  position: absolute;
+  transform: translateX(100%);
+  transition: all 0.4s ease-in-out;
+  width: 320px;
+  top: 0;
+  right: 0;
+  bottom: 0;
   box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.302), 0 1px 3px 1px rgba(60, 64, 67, 0.149);
   background-color: #fff;
   display: flex;
   flex-direction: column;
+}
+
+.open-sidebar .sidebar {
+  visibility: visible;
+  transform: none;
 }
 
 .sidebar-header {
