@@ -92,13 +92,6 @@ function renderUsers() {
   videoGrid.innerHTML = "";
   users.forEach((user) => {
     const video = document.createElement("video");
-    console.log(user.stream);
-    if (user.stream.id) {
-      video.srcObject = user.stream;
-      video.addEventListener("loadedmetadata", () => {
-        video.play();
-      });
-    }
     const userDiv = document.createElement("div");
     userDiv.classList.add("user");
     const name = document.createElement("span");
@@ -106,6 +99,13 @@ function renderUsers() {
     name.innerText = user.name;
     console.log("apend");
     userDiv.append(name);
+
+    if (user.stream?.id) {
+      video.srcObject = user.stream;
+      video.addEventListener("loadedmetadata", () => {
+        video.play();
+      });
+    }
     userDiv.append(video);
     videoGrid.append(userDiv);
   });
