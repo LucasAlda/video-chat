@@ -8,7 +8,7 @@ const videoGrid = document.getElementById("video-grid");
 const myVideo = document.createElement("video");
 myVideo.muted = true;
 const peers = {};
-const userConfig = { name: window.localStorage.getItem("name") || "John Doe", video: true, audio: true };
+const userConfig = { name: window.localStorage.getItem("name") || "John Doe", video: true, audio: true, me: true };
 
 navigator.mediaDevices
   .getUserMedia({
@@ -28,7 +28,6 @@ navigator.mediaDevices
     myPeer.on("call", (call) => {
       call.answer(stream);
       users.push({ id: call.peer, name: "Unknown", call: call });
-      const video = document.createElement("video");
       call.on("stream", (userVideoStream) => {
         users.find((usr) => usr.id === call.peer).stream = userVideoStream;
         renderUsers();
@@ -105,6 +104,9 @@ function renderUsers() {
       video.addEventListener("loadedmetadata", () => {
         video.play();
       });
+      if (user.me) {
+        video.muted = true;
+      }
     }
     userDiv.append(video);
     videoGrid.append(userDiv);
