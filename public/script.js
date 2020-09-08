@@ -1,23 +1,15 @@
 const socket = io("/");
-var myPeer = new Peer();
-var screenPeer = new Peer();
+const myPeer = new Peer();
+const screenPeer = new Peer();
 const callList = [];
 let users = [];
 
 let myVideoStream;
+let myScreenStream;
 const videoGrid = document.getElementById("video-grid");
-const myVideo = document.createElement("video");
-myVideo.muted = true;
+const shareButton = document.getElementById("share-button");
 const peers = {};
 const userConfig = { name: window.localStorage.getItem("name") || "John Doe", video: true, audio: true };
-
-navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).then((stream) => {
-  users.forEach((user) => {
-    if (user.id !== userConfig.id) {
-      const call = myPeer.call(user.id, stream);
-    }
-  });
-});
 
 navigator.mediaDevices
   .getUserMedia({
@@ -29,7 +21,6 @@ navigator.mediaDevices
   })
   .then((stream) => {
     myVideoStream = stream;
-    // addVideoStream(myVideo, stream, userConfig);
     userConfig.stream = stream;
     users.push(userConfig);
     renderUsers();
@@ -56,7 +47,7 @@ myPeer.on("open", (id) => {
 socket.on("user-disconnected", (userId) => {
   const goneUser = users.findIndex((user) => user.id === userId);
   console.log(goneUser);
-  if (goneUser) {
+  if (goneUser !== -1) {
     users[goneUser].call.close();
     users.splice(goneUser, 1);
   }
@@ -152,3 +143,17 @@ function playStopVideo(e) {
     myVideoStream.getVideoTracks()[0].enabled = true;
   }
 }
+
+shareButton.addEventListener("click", () => {
+  navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).then((stream) => {
+    myScreenStream = stream;
+    users.forEach((user) => {
+      if (user.id !== userConfig.id) {
+        const call = screenPeer.call(user.id, myScreenStream);
+        console.log("call to: " + user.id);
+      }
+    });
+    users.push({ id: screenPeer.id, stream: myScreenStream, name: "Screen" });
+    renderUsers();
+  });
+});
