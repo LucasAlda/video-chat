@@ -145,7 +145,7 @@ function playStopVideo(e) {
 }
 
 shareButton.addEventListener("click", () => {
-  navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).then((stream) => {
+  navigator.mediaDevices.getDisplayMedia({ video: { height: { ideal: 720 } }, audio: true }).then((stream) => {
     myScreenStream = stream;
     users.forEach((user) => {
       if (user.id !== userConfig.id) {
