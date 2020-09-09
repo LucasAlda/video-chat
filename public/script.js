@@ -1,8 +1,9 @@
 const socket = io("/");
 const myPeer = new Peer();
 const screenPeer = new Peer();
-const callList = [];
-let users = [];
+let users = [{ name: "as" }];
+let streaming = false;
+let showBig = false;
 
 let myVideoStream;
 let myScreenStream;
@@ -46,10 +47,10 @@ myPeer.on("open", (id) => {
 
 socket.on("user-disconnected", (userId) => {
   const goneUser = users.findIndex((user) => user.id === userId);
-  console.log(goneUser);
   if (goneUser !== -1) {
     users[goneUser].call.close();
     users.splice(goneUser, 1);
+    renderUsers();
   }
 });
 
@@ -67,36 +68,21 @@ function connectToNewUser(newUserConfig, stream) {
 
   call.on("close", () => {
     users = users.filter((usr) => usr.id !== newUserConfig.id);
-    console.log(users);
   });
 }
 
-// function addVideoStream(video, stream, userConfig) {
-//   video.srcObject = stream;
-//   video.addEventListener("loadedmetadata", () => {
-//     video.play();
-//   });
-//   const user = document.createElement("div");
-//   user.classList.add("user");
-//   const name = document.createElement("span");
-//   name.classList.add("name");
-//   name.innerText = userConfig.name;
-//   console.log("apend");
-//   user.append(name);
-//   user.append(video);
-//   videoGrid.append(user);
-// }
-
 function renderUsers() {
   videoGrid.innerHTML = "";
+
   users.forEach((user) => {
     const video = document.createElement("video");
     const userDiv = document.createElement("div");
+    if (showBig && showBig !== user.id) userDiv.classList.add("notShow");
     userDiv.classList.add("user");
+
     const name = document.createElement("span");
     name.classList.add("name");
     name.innerText = user.name;
-    console.log("apend");
     userDiv.append(name);
 
     if (user.stream?.id) {
@@ -108,16 +94,22 @@ function renderUsers() {
         video.muted = true;
       }
     }
+    userDiv.ondblclick = () => {
+      showBig = showBig !== user.id ? user.id : false;
+      renderUsers();
+    };
     userDiv.append(video);
     videoGrid.append(userDiv);
+    videoGrid.classList = `users-${users.length}`;
   });
+
+  resizeGrid();
 }
 
 document.getElementById("micro-button").addEventListener("click", muteOrUnmute);
 
 function muteOrUnmute(e) {
   const enabled = myVideoStream.getAudioTracks()[0].enabled;
-  console.log("camara was " + enabled);
   if (enabled) {
     userConfig.audio = false;
     document.getElementById("micro-button").classList.add("active");
@@ -145,15 +137,35 @@ function playStopVideo(e) {
 }
 
 shareButton.addEventListener("click", () => {
-  navigator.mediaDevices.getDisplayMedia({ video: { height: { ideal: 720 } }, audio: true }).then((stream) => {
-    myScreenStream = stream;
-    users.forEach((user) => {
-      if (user.id !== userConfig.id) {
-        const call = screenPeer.call(user.id, myScreenStream);
-        console.log("call to: " + user.id);
-      }
+  if (!streaming) {
+    navigator.mediaDevices.getDisplayMedia({ video: { height: { ideal: 720 } }, audio: true }).then((stream) => {
+      myScreenStream = stream;
+      users.forEach((user) => {
+        if (user.id !== userConfig.id) {
+          const call = screenPeer.call(user.id, myScreenStream);
+        }
+      });
+      users.push({ id: screenPeer.id, stream: myScreenStream, name: "Screen" });
+      renderUsers();
+      streaming = true;
     });
-    users.push({ id: screenPeer.id, stream: myScreenStream, name: "Screen" });
+  } else {
+    socket.emit("stream-off", screenPeer.id);
+    myScreenStream.getTracks().forEach(function (track) {
+      track.stop();
+    });
+    users = users.filter((user) => user.id !== screenPeer.id);
+    myScreenStream = undefined;
     renderUsers();
-  });
+    streaming = false;
+  }
+});
+
+const nameInput = document.getElementById("name-input");
+const nameSave = document.getElementById("name-save");
+nameInput.value = window.localStorage.getItem("name") || "John Doe";
+
+nameSave.addEventListener("click", () => {
+  window.localStorage.setItem("name", nameInput.value);
+  document.getElementsByClassName("main")[0].requestFullscreen();
 });

@@ -11,10 +11,17 @@
     <div class="container">
       <div class="main">
         <div class="main-videos">
-          <div id="video-grid"></div>
+          <div class="videos-container">
+            <div id="video-grid"></div>
+          </div>
         </div>
         <div class="main-controls">
-          <div class="main-control-title"></div>
+          <div class="main-control-title">
+            <div class="message-container">
+              <input type="text" id="name-input" placeholder="Name" value="" />
+              <button class="submit" id="name-save"><i class="fas fa-save"></i></button>
+            </div>
+          </div>
           <div class="main-controls-block">
             <div class="main-control-button call-controls" id="micro-button">
               <i class="fas fa-microphone microphone"></i>
@@ -26,8 +33,11 @@
               <i class="fas fa-video"></i>
             </div>
           </div>
-          <div class="main-control-block">
-            <div class="main-control-button chat">
+          <div class="main-control-block chat">
+            <div class="main-control-button chat" id="fullscreen-button">
+              <i class="fas fa-expand"></i>
+            </div>
+            <div class="main-control-button chat" id="open-chat-button">
               <i class="fas fa-users"></i>
             </div>
           </div>

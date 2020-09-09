@@ -27,6 +27,10 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
       socket.to(roomId).broadcast.emit("user-disconnected", userConfig.id);
     });
+
+    socket.on("stream-off", (userId) => {
+      socket.to(roomId).broadcast.emit("user-disconnected", userId);
+    });
   });
 });
 
