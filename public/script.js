@@ -1,7 +1,7 @@
 const socket = io("/");
 const myPeer = new Peer();
 const screenPeer = new Peer();
-let users = [{ name: "as" }];
+let users = [];
 let streaming = false;
 let showBig = false;
 
