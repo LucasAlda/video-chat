@@ -5,6 +5,7 @@ let users = [];
 let streaming = false;
 let showBig = false;
 
+let devices;
 let myVideoStream;
 let myScreenStream;
 const videoGrid = document.getElementById("video-grid");
@@ -12,38 +13,54 @@ const shareButton = document.getElementById("share-button");
 const peers = {};
 const userConfig = { name: window.localStorage.getItem("name") || "John Doe", video: true, audio: true };
 
-navigator.mediaDevices
-  .getUserMedia({
-    video: {
-      width: { ideal: 1280, max: 1920 },
-      height: { ideal: 720, max: 1080 },
-    },
-    audio: true,
-  })
-  .then((stream) => {
-    myVideoStream = stream;
-    userConfig.stream = stream;
-    users.push(userConfig);
-    renderUsers();
+(async () => {
+  devices = await navigator.mediaDevices.enumerateDevices();
+  console.log(devices);
+  myVideoStream = await navigator.mediaDevices.getUserMedia({
+    video:
+      devices.findIndex((dev) => dev.kind == "videoinput") > -1
+        ? {
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+          }
+        : false,
+    audio: devices.findIndex((dev) => dev.kind == "audioinput") > -1,
+  });
 
-    myPeer.on("call", (call) => {
-      call.answer(stream);
-      users.push({ id: call.peer, name: "Unknown", call: call });
-      call.on("stream", (userVideoStream) => {
-        users.find((usr) => usr.id === call.peer).stream = userVideoStream;
-        renderUsers();
-      });
-    });
+  userConfig.stream = myVideoStream;
+  users.push(userConfig);
+  renderUsers();
 
-    socket.on("user-connected", (newUserConfig) => {
-      connectToNewUser(newUserConfig, stream);
+  myPeer.on("call", (call) => {
+    call.answer(myVideoStream);
+
+    editUsers({ id: call.peer, call: call });
+    call.on("stream", (userVideoStream) => {
+      users.find((usr) => usr.id === call.peer).stream = userVideoStream;
+      renderUsers();
     });
   });
+
+  socket.on("user-connected", (newUserConfig) => {
+    connectToNewUser(newUserConfig, myVideoStream);
+  });
+})();
 
 myPeer.on("open", (id) => {
   userConfig.id = id;
   socket.emit("join-room", ROOM_ID, userConfig);
 });
+
+function editUsers(newUserData) {
+  const userIndex = users.findIndex((u) => u.id === newUserData.id);
+  if (userIndex > -1) {
+    Object.keys(newUserData).forEach((prop) => {
+      users[userIndex][prop] = newUserData[prop];
+    });
+  } else {
+    users.push(newUserData);
+  }
+}
 
 socket.on("user-disconnected", (userId) => {
   const goneUser = users.findIndex((user) => user.id === userId);
@@ -54,11 +71,17 @@ socket.on("user-disconnected", (userId) => {
   }
 });
 
+socket.on("stream-on", (userId) => {
+  console.log("stream on", userId);
+  editUsers({ id: userId, name: `Pantalla Compartida (${userConfig.name})` });
+  showBig = streaming.id;
+});
+
 function connectToNewUser(newUserConfig, stream) {
   console.log("conectando a usuario: " + newUserConfig.name);
   const call = myPeer.call(newUserConfig.id, stream);
 
-  users.push({ ...newUserConfig, call: call });
+  editUsers({ ...newUserConfig, call: call });
   renderUsers();
 
   call.on("stream", (userVideoStream) => {
@@ -145,7 +168,8 @@ shareButton.addEventListener("click", () => {
           const call = screenPeer.call(user.id, myScreenStream);
         }
       });
-      users.push({ id: screenPeer.id, stream: myScreenStream, name: "Screen" });
+      editUsers({ id: screenPeer.id, stream: myScreenStream, name: "Screen" });
+      socket.emit("stream-on", screenPeer.id);
       renderUsers();
       streaming = true;
     });

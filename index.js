@@ -22,7 +22,6 @@ io.on("connection", (socket) => {
     if (!users[roomId]) users[roomId] = [];
     users[roomId].push(userConfig);
     socket.to(roomId).broadcast.emit("user-connected", userConfig);
-    console.log(users);
 
     socket.on("disconnect", () => {
       socket.to(roomId).broadcast.emit("user-disconnected", userConfig.id);
@@ -30,6 +29,9 @@ io.on("connection", (socket) => {
 
     socket.on("stream-off", (userId) => {
       socket.to(roomId).broadcast.emit("user-disconnected", userId);
+    });
+    socket.on("stream-on", (userId) => {
+      socket.to(roomId).broadcast.emit("stream-on", userId);
     });
   });
 });
