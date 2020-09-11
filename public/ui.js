@@ -42,3 +42,84 @@ function resizeGrid() {
     }
   }
 }
+
+const nameInput = document.getElementById("name-input");
+const nameSave = document.getElementById("name-save");
+nameInput.value = window.localStorage.getItem("name") || "John Doe";
+
+nameSave.addEventListener("click", () => {
+  window.localStorage.setItem("name", nameInput.value);
+});
+
+document.getElementById("call-button").addEventListener("click", openModal);
+const modal = document.getElementById("modal");
+const closeButton = document.querySelector(".close-modal-button");
+
+function openModal() {
+  modal.classList.add("open");
+  modal.addEventListener("click", closeModal);
+  closeButton.addEventListener("click", closeModal);
+}
+
+function closeModal(e) {
+  if (e.target == modal || e.target == closeButton || e.target.parentNode == closeButton) {
+    modal.removeEventListener("click", closeModal);
+    closeButton.removeEventListener("click", closeModal);
+    modal.classList.remove("open");
+  }
+}
+
+function renderUsers() {
+  videoGrid.innerHTML = "";
+  users.forEach((user) => {
+    const video = document.createElement("video");
+    const userDiv = document.createElement("div");
+    if (showBig && showBig !== user.id) userDiv.classList.add("notShow");
+    userDiv.classList.add("user");
+
+    const info = document.createElement("span");
+    info.classList.add("info");
+
+    if (!user.audio) {
+      const noMic = document.createElement("span");
+      noMic.classList.add("fas");
+      noMic.classList.add("fa-microphone-slash");
+      noMic.classList.add("data");
+      info.append(noMic);
+    }
+
+    if (!user.video) {
+      const noCam = document.createElement("span");
+      noCam.classList.add("no-cam");
+      noCam.classList.add("bg-" + user.color);
+      noCam.innerHTML = "<span>";
+      user.name.split(" ").forEach((word) => (noCam.innerHTML += word.charAt(0).toUpperCase()));
+      noCam.innerHTML += "</span>";
+      userDiv.append(noCam);
+    }
+
+    const name = document.createElement("span");
+    name.innerText = user.name;
+    info.append(name);
+    userDiv.append(info);
+
+    if (user.stream?.id) {
+      video.srcObject = user.stream;
+      video.addEventListener("loadedmetadata", () => {
+        video.play();
+      });
+      if (user.id === userConfig.id) {
+        video.muted = true;
+      }
+    }
+    userDiv.ondblclick = () => {
+      showBig = showBig !== user.id ? user.id : false;
+      renderUsers();
+    };
+    userDiv.append(video);
+    videoGrid.append(userDiv);
+    videoGrid.classList = `users-${users.length}`;
+  });
+
+  resizeGrid();
+}

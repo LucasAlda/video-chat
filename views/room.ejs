@@ -22,17 +22,24 @@
               <button class="submit" id="name-save"><i class="fas fa-save"></i></button>
             </div>
           </div>
-          <div class="main-controls-block">
+          <div class="main-controls-block d-none" id="call-controls">
             <div class="main-control-button call-controls" id="micro-button">
               <i class="fas fa-microphone microphone"></i>
             </div>
-            <div class="main-control-button end-call" id="share-button">
+            <div class="main-control-button end-call" id="stop-call-button">
               <i class="fas fa-phone-slash"></i>
             </div>
             <div class="main-control-button video" id="camara-button">
               <i class="fas fa-video"></i>
             </div>
+            <div class="main-control-button end-call" id="share-button">
+              <i class="fas fa-tv"></i>
+            </div>
           </div>
+          <div class="main-controls-block" id="enter-call-controls">
+            <div class="main-control-button call-button" id="call-button">Entrar a la llamada</div>
+          </div>
+
           <div class="main-control-block chat">
             <div class="main-control-button chat" id="fullscreen-button">
               <i class="fas fa-expand"></i>
@@ -57,13 +64,37 @@
         </div>
       </div>
     </div>
+    <div class="modal-container" id="modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Configurar Llamada</h3>
+          <button class="close-modal-button"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <form id="call-config">
+            <label>Camara:</label>
+            <select name="video" id="video-devices">
+              <option value="false">Sin Cámara</option>
+            </select>
+            <label>Sonido:</label>
+            <select name="audio" id="audio-devices">
+              <option value="false">Sin Cámara</option>
+            </select>
+          </form>
+        </div>
+        <div class="modal-bottom">
+          <button type="button" id="enter-call-button">Entrar</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const ROOM_ID = "<%= roomId %>";
     </script>
     <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js" defer></script>
     <script src="/socket.io/socket.io.js" defer></script>
-    <script src="script.js" defer></script>
     <script src="ui.js" defer></script>
+    <script src="script.js" defer></script>
     <script src="https://kit.fontawesome.com/e54da704e9.js" crossorigin="anonymous"></script>
   </body>
 </html>

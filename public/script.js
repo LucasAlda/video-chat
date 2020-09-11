@@ -5,67 +5,107 @@ let users = [];
 let streaming = false;
 let showBig = false;
 
-let devices;
+let devices = [];
 let myVideoStream;
 let myScreenStream;
+
 const videoGrid = document.getElementById("video-grid");
-const shareButton = document.getElementById("share-button");
-const peers = {};
-const userConfig = { name: window.localStorage.getItem("name") || "John Doe", video: true, audio: true };
+const videoSelect = document.getElementById("video-devices");
+const audioSelect = document.getElementById("audio-devices");
+const enterCallControls = document.getElementById("enter-call-controls");
+const callControls = document.getElementById("call-controls");
 
-(async () => {
-  devices = await navigator.mediaDevices.enumerateDevices();
-  console.log(devices);
-  myVideoStream = await navigator.mediaDevices.getUserMedia({
-    video:
-      devices.findIndex((dev) => dev.kind == "videoinput") > -1
-        ? {
-            width: { ideal: 1280, max: 1920 },
-            height: { ideal: 720, max: 1080 },
-          }
-        : false,
-    audio: devices.findIndex((dev) => dev.kind == "audioinput") > -1,
+const userConfig = {
+  name: window.localStorage.getItem("name") || "John Doe",
+  stream: false,
+  video: false,
+  audio: false,
+};
+
+const colors = ["red", "orange", "yellow", "white", "blue", "violet"];
+const availableColors = [...colors];
+
+navigator.mediaDevices.enumerateDevices().then((dvs) => {
+  devices = dvs;
+  videoSelect.innerHTML = "";
+  audioSelect.innerHTML = "";
+  const defVideoOption = document.createElement("option");
+  defVideoOption.innerText = "Sin Cámara";
+  videoSelect.appendChild(defVideoOption);
+  const defAudioOption = document.createElement("option");
+  defAudioOption.innerText = "Sin Microfono";
+  audioSelect.appendChild(defAudioOption);
+  let count = 1;
+  devices.forEach((device) => {
+    const option = document.createElement("option");
+    option.value = device.deviceId;
+    const label = device.label;
+    const textNode = document.createTextNode(label);
+    option.appendChild(textNode);
+
+    if (device.kind === "videoinput") {
+      videoSelect.appendChild(option);
+    } else if (device.kind === "audioinput") {
+      audioSelect.appendChild(option);
+    }
   });
-
-  userConfig.stream = myVideoStream;
-  users.push(userConfig);
-  renderUsers();
-
-  myPeer.on("call", (call) => {
-    call.answer(myVideoStream);
-
-    editUsers({ id: call.peer, call: call });
-    call.on("stream", (userVideoStream) => {
-      users.find((usr) => usr.id === call.peer).stream = userVideoStream;
-      renderUsers();
-    });
-  });
-
-  socket.on("user-connected", (newUserConfig) => {
-    connectToNewUser(newUserConfig, myVideoStream);
-  });
-})();
-
-myPeer.on("open", (id) => {
-  userConfig.id = id;
-  socket.emit("join-room", ROOM_ID, userConfig);
 });
 
-function editUsers(newUserData) {
-  const userIndex = users.findIndex((u) => u.id === newUserData.id);
-  if (userIndex > -1) {
-    Object.keys(newUserData).forEach((prop) => {
-      users[userIndex][prop] = newUserData[prop];
-    });
-  } else {
-    users.push(newUserData);
+myPeer.on("call", (call) => {
+  console.log("llamada");
+  call.answer(myVideoStream);
+
+  manageUsers({ peerId: call.peer, call: call });
+  call.on("stream", (userVideoStream) => {
+    users.find((usr) => usr.peerId === call.peer).stream = userVideoStream;
+    renderUsers();
+  });
+});
+
+myPeer.on("open", (id) => {
+  userConfig.peerId = id;
+  manageUsers(userConfig);
+  if (userConfig.id && userConfig.peerId) socket.emit("join-room", ROOM_ID, userConfig);
+});
+
+socket.on("connect", () => {
+  userConfig.id = socket.id;
+  manageUsers(userConfig);
+  renderUsers();
+
+  if (userConfig.id && userConfig.peerId) socket.emit("join-room", ROOM_ID, userConfig);
+});
+
+socket.on("users-list", (usersList) => {
+  usersList.forEach((user) => {
+    manageUsers(user);
+  });
+  renderUsers();
+});
+
+socket.on("user-connected", (newUserConfig) => {
+  console.log("usuario conectado");
+  connectToNewUser(newUserConfig);
+  if (userConfig.video || userConfig.audio) {
+    const call = myPeer.call(newUserConfig.peerId, myVideoStream);
   }
-}
+});
+
+socket.on("user-change", (newUserConfig) => {
+  connectToNewUser(newUserConfig);
+});
 
 socket.on("user-disconnected", (userId) => {
   const goneUser = users.findIndex((user) => user.id === userId);
   if (goneUser !== -1) {
-    users[goneUser].call.close();
+    users.splice(goneUser, 1);
+    renderUsers();
+  }
+});
+
+socket.on("stream-off", (userId) => {
+  const goneUser = users.findIndex((user) => user.peerId === userId);
+  if (goneUser !== -1) {
     users.splice(goneUser, 1);
     renderUsers();
   }
@@ -73,60 +113,30 @@ socket.on("user-disconnected", (userId) => {
 
 socket.on("stream-on", (userId) => {
   console.log("stream on", userId);
-  editUsers({ id: userId, name: `Pantalla Compartida (${userConfig.name})` });
-  showBig = streaming.id;
+
+  manageUsers({ peerId: userId, video: true, audio: true, name: `Pantalla Compartida (${userConfig.name})` });
+  showBig = userId;
+  renderUsers();
 });
 
-function connectToNewUser(newUserConfig, stream) {
-  console.log("conectando a usuario: " + newUserConfig.name);
-  const call = myPeer.call(newUserConfig.id, stream);
-
-  editUsers({ ...newUserConfig, call: call });
-  renderUsers();
-
-  call.on("stream", (userVideoStream) => {
-    users.find((usr) => usr.id === newUserConfig.id).stream = userVideoStream;
-    renderUsers();
-  });
-
-  call.on("close", () => {
-    users = users.filter((usr) => usr.id !== newUserConfig.id);
-  });
+function manageUsers(newUserData) {
+  const userIndex = users.findIndex((u) =>
+    newUserData.id ? u.id === newUserData.id : u.peerId === newUserData.peerId
+  );
+  if (userIndex > -1) {
+    Object.keys(newUserData).forEach((prop) => {
+      users[userIndex][prop] = newUserData[prop];
+    });
+  } else {
+    const userColorIndex = Math.round((availableColors.length - 1) * Math.random());
+    users.push({ ...newUserData, color: availableColors[userColorIndex] });
+    if (availableColors.length === 0) availableColors = [...colors];
+  }
 }
 
-function renderUsers() {
-  videoGrid.innerHTML = "";
-
-  users.forEach((user) => {
-    const video = document.createElement("video");
-    const userDiv = document.createElement("div");
-    if (showBig && showBig !== user.id) userDiv.classList.add("notShow");
-    userDiv.classList.add("user");
-
-    const name = document.createElement("span");
-    name.classList.add("name");
-    name.innerText = user.name;
-    userDiv.append(name);
-
-    if (user.stream?.id) {
-      video.srcObject = user.stream;
-      video.addEventListener("loadedmetadata", () => {
-        video.play();
-      });
-      if (user.id === userConfig.id) {
-        video.muted = true;
-      }
-    }
-    userDiv.ondblclick = () => {
-      showBig = showBig !== user.id ? user.id : false;
-      renderUsers();
-    };
-    userDiv.append(video);
-    videoGrid.append(userDiv);
-    videoGrid.classList = `users-${users.length}`;
-  });
-
-  resizeGrid();
+function connectToNewUser(newUserConfig) {
+  manageUsers({ ...newUserConfig });
+  renderUsers();
 }
 
 document.getElementById("micro-button").addEventListener("click", muteOrUnmute);
@@ -137,10 +147,22 @@ function muteOrUnmute(e) {
     userConfig.audio = false;
     document.getElementById("micro-button").classList.add("active");
     myVideoStream.getAudioTracks()[0].enabled = false;
+    socket.emit("user-change", {
+      id: userConfig.id,
+      name: userConfig.name,
+      audio: userConfig.audio,
+      video: userConfig.video,
+    });
   } else {
     userConfig.audio = true;
     document.getElementById("micro-button").classList.remove("active");
     myVideoStream.getAudioTracks()[0].enabled = true;
+    socket.emit("user-change", {
+      id: userConfig.id,
+      name: userConfig.name,
+      audio: userConfig.audio,
+      video: userConfig.video,
+    });
   }
 }
 
@@ -149,29 +171,77 @@ document.getElementById("camara-button").addEventListener("click", playStopVideo
 function playStopVideo(e) {
   const enabled = myVideoStream.getVideoTracks()[0].enabled;
   if (enabled) {
-    userConfig.video = true;
+    userConfig.video = false;
     document.getElementById("camara-button").classList.add("active");
     myVideoStream.getVideoTracks()[0].enabled = false;
+    socket.emit("user-change", {
+      id: userConfig.id,
+      name: userConfig.name,
+      audio: userConfig.audio,
+      video: userConfig.video,
+    });
   } else {
-    userConfig.video = false;
+    userConfig.video = true;
     document.getElementById("camara-button").classList.remove("active");
     myVideoStream.getVideoTracks()[0].enabled = true;
+    socket.emit("user-change", {
+      id: userConfig.id,
+      name: userConfig.name,
+      audio: userConfig.audio,
+      video: userConfig.video,
+    });
   }
 }
 
-shareButton.addEventListener("click", () => {
+document.getElementById("enter-call-button").addEventListener("click", enterCall);
+
+function enterCall(e) {
+  const options = {
+    video: true,
+    audio: true,
+  };
+  userConfig.video = true;
+  userConfig.audio = true;
+
+  navigator.mediaDevices.getUserMedia(options).then((stream) => {
+    myVideoStream = stream;
+    userConfig.stream = myVideoStream;
+    users.forEach((user) => {
+      if (user.id !== userConfig.id) {
+        const call = myPeer.call(user.peerId, myVideoStream);
+      }
+    });
+
+    socket.emit("user-change", {
+      id: userConfig.id,
+      name: userConfig.name,
+      audio: userConfig.audio,
+      video: userConfig.video,
+    });
+    manageUsers(userConfig);
+    renderUsers();
+  });
+  callControls.classList.remove("d-none");
+  enterCallControls.classList.add("d-none");
+  modal.classList.remove("open");
+}
+
+document.getElementById("share-button").addEventListener("click", shareScreen);
+
+function shareScreen() {
   if (!streaming) {
     navigator.mediaDevices.getDisplayMedia({ video: { height: { ideal: 720 } }, audio: true }).then((stream) => {
       myScreenStream = stream;
       users.forEach((user) => {
         if (user.id !== userConfig.id) {
-          const call = screenPeer.call(user.id, myScreenStream);
+          const call = screenPeer.call(user.peerId, myScreenStream);
         }
       });
-      editUsers({ id: screenPeer.id, stream: myScreenStream, name: "Screen" });
+      manageUsers({ id: screenPeer.id, stream: myScreenStream, name: "Tu Pantalla", video: true, audio: true });
       socket.emit("stream-on", screenPeer.id);
-      renderUsers();
+      showBig = screenPeer.id;
       streaming = true;
+      renderUsers();
     });
   } else {
     socket.emit("stream-off", screenPeer.id);
@@ -183,13 +253,10 @@ shareButton.addEventListener("click", () => {
     renderUsers();
     streaming = false;
   }
-});
+}
 
-const nameInput = document.getElementById("name-input");
-const nameSave = document.getElementById("name-save");
-nameInput.value = window.localStorage.getItem("name") || "John Doe";
+document.getElementById("stop-call-button").addEventListener("click", stopCall);
 
-nameSave.addEventListener("click", () => {
-  window.localStorage.setItem("name", nameInput.value);
-  document.getElementsByClassName("main")[0].requestFullscreen();
-});
+function stopCall() {
+  console.log("endCall");
+}
