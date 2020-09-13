@@ -44,6 +44,14 @@ body {
   background-color: #fff;
 }
 
+.fullscreen .main-controls {
+  position: absolute;
+  background: transparent;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
 .main-controls > div {
   display: flex;
   min-width: 62px;
@@ -55,6 +63,7 @@ body {
 
 .main-control-button {
   border: 1px solid #dcdcdc;
+  background-color: #fff;
   color: #c91e18;
   font-size: 16px;
   border-radius: 50%;
@@ -82,11 +91,15 @@ body {
   background-color: #bb1b15;
 }
 
+.fullscreen .main-control-title {
+  visibility: hidden;
+}
+
 .main-control-button.call-button {
   width: auto;
   color: #353535;
   padding: 0 20px;
-  border-radius: 4px;
+  border-radius: 6px;
   border: none;
   font-weight: 600;
   background-color: #eeeeee;
@@ -103,6 +116,7 @@ body {
 .main-control-button.chat {
   border: none;
   color: #afafaf;
+  border-radius: 6px;
   font-size: 16px;
 }
 
@@ -111,6 +125,10 @@ body {
   border-radius: 6px;
   background-color: #eeeeee;
   font-size: 16px;
+}
+
+.fullscreen .main-control-button.chat {
+  background: transparent;
 }
 
 .sidebar {
@@ -153,10 +171,41 @@ body {
   flex-grow: 1;
 }
 
+ul {
+  padding: 0;
+}
+
+li {
+  list-style: none;
+  padding: 0 10px;
+  display: block;
+}
+
+li h6 {
+  margin: 0;
+  font-size: 13px;
+  display: inline-block;
+}
+
+li span {
+  float: right;
+  font-size: 12px;
+  line-height: 25px;
+}
+
+li p {
+  margin: 0;
+  font-size: 14px;
+  padding: 0 10px;
+}
+
 .message-container {
   border-top: 1px solid #e2e2e2;
   height: 47px;
   padding: 10px;
+}
+
+.message-container form {
   display: flex;
   align-items: center;
 }
@@ -234,10 +283,19 @@ body {
   height: 0;
   position: relative;
   border: 1px solid #777777;
+  background: #000000;
   border-radius: 4px;
   justify-self: center;
   align-self: center;
   overflow: hidden;
+}
+
+#video-grid .user.not-show {
+  display: none;
+}
+
+#video-grid .user.stream {
+  padding-top: 54%;
 }
 
 #video-grid .user .info {
@@ -300,6 +358,30 @@ span.no-cam.bg-blue {
 span.no-cam.bg-violet {
   background-color: #983ac2;
   color: #fff;
+}
+
+.text-red {
+  color: #ff0808;
+}
+
+.text-orange {
+  color: #ff8a00;
+}
+
+.text-yellow {
+  color: #e5bb0f;
+}
+
+.text-blue {
+  color: #034dcc;
+}
+
+.text-violet {
+  color: #983ac2;
+}
+
+.text-white {
+  color: #000;
 }
 
 video {

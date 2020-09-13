@@ -33,10 +33,6 @@ io.on("connection", (socket) => {
       socket.to(roomId).broadcast.emit("user-disconnected", userConfig.id);
     });
 
-    socket.on("stream-off", (userId) => {
-      socket.to(roomId).broadcast.emit("stream-off", userId);
-    });
-
     socket.on("user-change", (newUserConfig) => {
       socket.to(roomId).broadcast.emit("user-change", newUserConfig);
       manageUsers(roomId, newUserConfig);
@@ -44,6 +40,18 @@ io.on("connection", (socket) => {
 
     socket.on("stream-on", (userId) => {
       socket.to(roomId).broadcast.emit("stream-on", userId);
+    });
+
+    socket.on("stream-off", (userId) => {
+      socket.to(roomId).broadcast.emit("stream-off", userId);
+    });
+
+    socket.on("stop-call", (userId) => {
+      socket.to(roomId).broadcast.emit("stop-call", userId);
+    });
+
+    socket.on("message", (message) => {
+      socket.to(roomId).broadcast.emit("message", message);
     });
   });
 });

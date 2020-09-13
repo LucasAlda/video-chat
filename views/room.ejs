@@ -56,11 +56,13 @@
           <i class="fas fa-times"></i>
         </div>
         <div class="sidebar-chat">
-          <ul class="messages"></ul>
+          <ul class="messages" id="messages"></ul>
         </div>
         <div class="message-container">
-          <input type="text" id="chat-message" placeholder="Say Hi!" />
-          <button class="submit"><i class="fas fa-paper-plane"></i></button>
+          <form id="send-message">
+            <input type="text" name="message" autocomplete="off" placeholder="Say Hi!" />
+            <button type="submit" class="submit"><i class="fas fa-paper-plane"></i></button>
+          </form>
         </div>
       </div>
     </div>

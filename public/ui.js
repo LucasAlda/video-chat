@@ -1,4 +1,5 @@
 const container = document.querySelector(".container");
+const mainDiv = document.getElementsByClassName("main")[0];
 const openChatButton = document.querySelector("#open-chat-button");
 const fullscreenButton = document.querySelector("#fullscreen-button");
 let fullscreen = false;
@@ -7,24 +8,47 @@ openChatButton.addEventListener("click", () => {
   container.classList.toggle("open-sidebar");
 });
 
-fullscreenButton.addEventListener("click", () => {
+mainDiv.addEventListener("fullscreenchange", () => {
   if (!fullscreen) {
-    document.getElementsByClassName("main")[0].requestFullscreen();
+    mainDiv.classList.add("fullscreen");
     fullscreenButton.innerHTML = '<i class="fas fa-compress"></i>';
     fullscreen = true;
   } else {
-    document.exitFullscreen();
+    mainDiv.classList.remove("fullscreen");
     fullscreenButton.innerHTML = '<i class="fas fa-expand"></i>';
     fullscreen = false;
   }
 });
+fullscreenButton.addEventListener("click", toggleFullScreen);
+
+function toggleFullScreen() {
+  if (!fullscreen) {
+    mainDiv.requestFullscreen();
+    mainDiv.classList.add("fullscreen");
+    fullscreenButton.innerHTML = '<i class="fas fa-compress"></i>';
+    fullscreen = true;
+  } else {
+    document.exitFullscreen();
+    mainDiv.classList.remove("fullscreen");
+    fullscreenButton.innerHTML = '<i class="fas fa-expand"></i>';
+    fullscreen = false;
+  }
+}
 
 const mainVideos = document.getElementsByClassName("main-videos")[0];
 const videosContainer = document.getElementsByClassName("videos-container")[0];
 window.addEventListener("resize", resizeGrid);
 
 function resizeGrid() {
-  if (users.length !== 2 && users.length < 5) {
+  if (showBig) {
+    if (mainVideos.clientWidth / (document.documentElement.clientHeight - (fullscreen ? 0 : 68)) > 1.85) {
+      videosContainer.style.paddingTop = `${document.documentElement.clientHeight - 89}px`;
+      videosContainer.style.width = `${(document.documentElement.clientHeight - (fullscreen ? 0 : 89)) * 1.85}px`;
+    } else {
+      videosContainer.style.paddingTop = `54%`;
+      videosContainer.style.width = `100%`;
+    }
+  } else if (users.length !== 2 && users.length < 5) {
     if (mainVideos.clientWidth / (document.documentElement.clientHeight - 68) > 1.63) {
       videosContainer.style.paddingTop = `${document.documentElement.clientHeight - 89}px`;
       videosContainer.style.width = `${(document.documentElement.clientHeight - 68) * 1.63}px`;
@@ -74,7 +98,8 @@ function renderUsers() {
   users.forEach((user) => {
     const video = document.createElement("video");
     const userDiv = document.createElement("div");
-    if (showBig && showBig !== user.id) userDiv.classList.add("notShow");
+    if (showBig && showBig !== user.id && showBig !== user.peerId) userDiv.classList.add("not-show");
+    if (showBig && (showBig === user.id || showBig === user.peerId)) userDiv.classList.add("stream");
     userDiv.classList.add("user");
 
     const info = document.createElement("span");
@@ -108,7 +133,7 @@ function renderUsers() {
       video.addEventListener("loadedmetadata", () => {
         video.play();
       });
-      if (user.id === userConfig.id) {
+      if (user.id === userConfig.id || user.myStream) {
         video.muted = true;
       }
     }
@@ -118,7 +143,7 @@ function renderUsers() {
     };
     userDiv.append(video);
     videoGrid.append(userDiv);
-    videoGrid.classList = `users-${users.length}`;
+    videoGrid.classList = `users-${showBig ? "1" : users.length}`;
   });
 
   resizeGrid();
