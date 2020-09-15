@@ -2,7 +2,11 @@ const express = require("express");
 const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
+const yt = require("ytdl-core");
+var ss = require("socket.io-stream");
+var stream = ss.createStream();
 const { v4: uuidV4 } = require("uuid");
+const fs = require("fs");
 const rooms = {};
 
 app.set("view engine", "ejs");
@@ -10,6 +14,13 @@ app.use(express.static("public"));
 
 app.get("/", (req, res) => {
   res.redirect(`/${uuidV4()}`);
+});
+
+app.get("/stream", (req, res) => {
+  const file = __dirname + "/public/song.mp3";
+
+  const rstream = fs.createReadStream(file);
+  rstream.pipe(res);
 });
 
 app.get("/:room", (req, res) => {
@@ -50,8 +61,29 @@ io.on("connection", (socket) => {
       socket.to(roomId).broadcast.emit("stop-call", userId);
     });
 
-    socket.on("message", (message) => {
+    socket.on("message", async (message) => {
       socket.to(roomId).broadcast.emit("message", message);
+      const command = message.message.split(" ")[0];
+      const firstLetter = message.message.charAt(0);
+      if (firstLetter !== ".") return;
+      switch (message.message.split(" ")[0]) {
+        case firstLetter + "play":
+          console.log(message.message.slice(message.message.indexOf(" ") + 1, message.message.length));
+
+          // yt(message.message.slice(message.message.indexOf(" ") + 1, message.message.length), {
+          //   filter: "audioonly",
+          // }).pipe(fs.createWriteStream("public/song.mp3"));
+
+          // setTimeout(() => {
+          //   console.log("song fetched");
+          //   socket.emit("music");
+          //   socket.to(roomId).broadcast.emit("music");
+          // }, 1500);
+          break;
+
+        default:
+          break;
+      }
     });
   });
 });

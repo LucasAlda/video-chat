@@ -8,19 +8,7 @@ openChatButton.addEventListener("click", () => {
   container.classList.toggle("open-sidebar");
 });
 
-mainDiv.addEventListener("fullscreenchange", () => {
-  if (!fullscreen) {
-    mainDiv.classList.add("fullscreen");
-    fullscreenButton.innerHTML = '<i class="fas fa-compress"></i>';
-    fullscreen = true;
-  } else {
-    mainDiv.classList.remove("fullscreen");
-    fullscreenButton.innerHTML = '<i class="fas fa-expand"></i>';
-    fullscreen = false;
-  }
-});
 fullscreenButton.addEventListener("click", toggleFullScreen);
-
 function toggleFullScreen() {
   if (!fullscreen) {
     mainDiv.requestFullscreen();
@@ -28,7 +16,7 @@ function toggleFullScreen() {
     fullscreenButton.innerHTML = '<i class="fas fa-compress"></i>';
     fullscreen = true;
   } else {
-    document.exitFullscreen();
+    if (document.fullscreen) document.exitFullscreen();
     mainDiv.classList.remove("fullscreen");
     fullscreenButton.innerHTML = '<i class="fas fa-expand"></i>';
     fullscreen = false;

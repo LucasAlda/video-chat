@@ -147,6 +147,14 @@ socket.on("stop-call", (userId) => {
 });
 
 socket.on("message", (message) => addMessage(message));
+
+socket.on("music", () => {
+  // video.src = "/stream";
+  // video.addEventListener("loadedmetadata", () => {
+  //   video.play();
+  // });
+});
+
 /*****  USERS  ******/
 
 function manageUsers(newUserData) {
