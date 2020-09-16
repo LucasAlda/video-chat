@@ -106,7 +106,7 @@ function renderUsers() {
       noCam.classList.add("no-cam");
       noCam.classList.add("bg-" + user.color);
       noCam.innerHTML = "<span>";
-      user.name.split(" ").forEach((word) => (noCam.innerHTML += word.charAt(0).toUpperCase()));
+      (user.name || "No name").split(" ").forEach((word) => (noCam.innerHTML += word.charAt(0).toUpperCase()));
       noCam.innerHTML += "</span>";
       userDiv.append(noCam);
     }
@@ -136,3 +136,23 @@ function renderUsers() {
 
   resizeGrid();
 }
+
+const musicSlider = document.getElementById("music-volume-slider");
+let musicSliderClicked = false;
+musicSlider.addEventListener("mousedown", () => {
+  musicSliderClicked = true;
+});
+
+musicSlider.addEventListener("mousemove", (e) => {
+  if (musicSliderClicked) {
+    musicSlider.firstElementChild.style.width =
+      (e.offsetX < musicSlider.offsetWidth ? (e.offsetX > 0 ? e.offsetX / musicSlider.offsetWidth : 0) : 1) * 100 + "%";
+    video.volume = e.offsetX < musicSlider.offsetWidth ? (e.offsetX > 0 ? e.offsetX / musicSlider.offsetWidth : 0) : 1;
+  }
+});
+
+musicSlider.firstElementChild.style.width = video.volume * 100 + "%";
+
+document.addEventListener("mouseup", () => {
+  musicSliderClicked = false;
+});

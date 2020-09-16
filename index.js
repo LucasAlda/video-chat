@@ -3,11 +3,15 @@ const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
 const yt = require("ytdl-core");
-var ss = require("socket.io-stream");
-var stream = ss.createStream();
+const ytsr = require("ytsr");
 const { v4: uuidV4 } = require("uuid");
 const fs = require("fs");
+
 const rooms = {};
+const currentSong = {};
+const lists = {};
+
+let musicEmmiter;
 
 app.set("view engine", "ejs");
 app.use(express.static("public"));
@@ -17,10 +21,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/stream", (req, res) => {
-  const file = __dirname + "/public/song.mp3";
-
-  const rstream = fs.createReadStream(file);
-  rstream.pipe(res);
+  res.sendFile(__dirname + "/public/song.mp3");
 });
 
 app.get("/:room", (req, res) => {
@@ -61,24 +62,72 @@ io.on("connection", (socket) => {
       socket.to(roomId).broadcast.emit("stop-call", userId);
     });
 
+    socket.on("pause-music", () => {
+      io.to(roomId).emit("pause-music");
+    });
+
+    socket.on("play-music", (time) => {
+      io.to(roomId).emit("play-music", time);
+    });
+
     socket.on("message", async (message) => {
       socket.to(roomId).broadcast.emit("message", message);
+
       const command = message.message.split(" ")[0];
       const firstLetter = message.message.charAt(0);
+      const args =
+        message.message.indexOf(" ") > -1
+          ? message.message.slice(message.message.indexOf(" ") + 1, message.message.length)
+          : "";
+
+      if (message.message == "puto")
+        io.in(roomId).emit("message", { message: "EHHHH, a quien le deci?", id: 1, moment: new Date() });
+      if (message.message == "a vo") {
+        io.in(roomId).emit("message", {
+          message: "Callate boludo que vos te queres culiar al vecino de 90 años",
+          id: 1,
+          moment: new Date(),
+        });
+        io.in(roomId).emit("message", {
+          message: "que me vas a venir a decir puto a mi",
+          id: 1,
+          moment: new Date(),
+        });
+      }
+
       if (firstLetter !== ".") return;
-      switch (message.message.split(" ")[0]) {
+
+      switch (command) {
         case firstLetter + "play":
-          console.log(message.message.slice(message.message.indexOf(" ") + 1, message.message.length));
+          if (!musicEmmiter) musicEmmiter = socket.id;
 
-          // yt(message.message.slice(message.message.indexOf(" ") + 1, message.message.length), {
-          //   filter: "audioonly",
-          // }).pipe(fs.createWriteStream("public/song.mp3"));
+          let musicData = {};
 
-          // setTimeout(() => {
-          //   console.log("song fetched");
-          //   socket.emit("music");
-          //   socket.to(roomId).broadcast.emit("music");
-          // }, 1500);
+          if (args.trimStart().length > 0) {
+            if (args.startsWith("http")) {
+              musicData.link = args.split("?v=")[1];
+            } else {
+              musicData.link = args;
+            }
+            const sr = await ytsr(args, { limit: 1 });
+            musicData.link = sr.items[0].link;
+            musicData.title = sr.items[0].title;
+            musicData.thumbnail = sr.items[0].thumbnail;
+            musicData.singer = sr.items[0].author;
+            musicData.duration = sr.items[0].duration;
+
+            if (!lists[roomId]) {
+              lists[roomId] = [];
+            }
+            lists[roomId].push(musicData);
+          }
+
+          playFollowingSong(roomId);
+
+          break;
+
+        case firstLetter + "pause":
+          io.to(roomId).emit("pause-music");
           break;
 
         default:
@@ -88,13 +137,36 @@ io.on("connection", (socket) => {
   });
 });
 
+async function playFollowingSong(roomId) {
+  if (!lists[roomId] || lists[roomId].length == 0) {
+    io.in(roomId).emit("message", { message: "No caze que temita queres", id: 1, moment: new Date() });
+    return;
+  }
+  musicData = lists[roomId][0];
+
+  const video = yt(musicData.link, {
+    filter: "audioonly",
+  });
+
+  const chunks = [];
+  for await (let chunk of video) {
+    chunks.push(chunk);
+  }
+
+  io.to(roomId).emit("music", { ...musicData, start: new Date(), song: Buffer.concat(chunks), playing: true });
+  io.in(roomId).emit("message", {
+    message: "Perri escuchate " + musicData.title,
+    id: 1,
+    moment: new Date(),
+  });
+}
+
 server.listen(process.env.PORT || 3000, () => {
   console.log("Server listening on port " + (process.env.PORT || 3000));
 });
 
 function manageUsers(roomId, newUserData) {
   const userIndex = rooms[roomId].findIndex((u) => u.id === newUserData.id);
-  console.log(userIndex);
   if (userIndex > -1) {
     Object.keys(newUserData).forEach((prop) => {
       rooms[roomId][userIndex][prop] = newUserData[prop];
@@ -102,6 +174,4 @@ function manageUsers(roomId, newUserData) {
   } else {
     rooms[roomId].push(newUserData);
   }
-
-  console.log(rooms[roomId]);
 }

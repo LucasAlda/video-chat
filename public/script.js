@@ -10,6 +10,8 @@ let devices = [];
 let myVideoStream;
 let myScreenStream;
 
+let currentSongData;
+
 const videoGrid = document.getElementById("video-grid");
 const videoSelect = document.getElementById("video-devices");
 const audioSelect = document.getElementById("audio-devices");
@@ -59,6 +61,7 @@ navigator.mediaDevices.enumerateDevices().then((dvs) => {
 /*****  PEERJS  ******/
 
 myPeer.on("call", (call) => {
+  console.log(call);
   console.log("llamada");
   call.answer();
 
@@ -72,7 +75,7 @@ myPeer.on("call", (call) => {
 myPeer.on("open", (id) => {
   userConfig.peerId = id;
   manageUsers(userConfig);
-  if (userConfig.id && userConfig.peerId) socket.emit("join-room", ROOM_ID, userConfig);
+  // if (userConfig.id && userConfig.peerId) socket.emit("join-room", ROOM_ID, userConfig);
 });
 
 /*****  SOCKETS  ******/
@@ -82,7 +85,8 @@ socket.on("connect", () => {
   manageUsers(userConfig);
   renderUsers();
 
-  if (userConfig.id && userConfig.peerId) socket.emit("join-room", ROOM_ID, userConfig);
+  // if (userConfig.id && userConfig.peerId) socket.emit("join-room", ROOM_ID, userConfig);
+  if (userConfig.id || userConfig.peerId) socket.emit("join-room", ROOM_ID, userConfig);
 });
 
 socket.on("users-list", (usersList) => {
@@ -148,11 +152,27 @@ socket.on("stop-call", (userId) => {
 
 socket.on("message", (message) => addMessage(message));
 
-socket.on("music", () => {
-  // video.src = "/stream";
-  // video.addEventListener("loadedmetadata", () => {
-  //   video.play();
-  // });
+socket.on("pause-music", () => {
+  document.querySelector(".music").classList.remove("playing");
+  video.pause();
+});
+
+socket.on("play-music", (time) => {
+  document.querySelector(".music").classList.add("playing");
+  video.currentTime = time;
+  video.play();
+});
+
+socket.on("music", async (musicData) => {
+  if (musicData.title !== currentSongData?.title) getBufferIntoMediaStream(musicData.song, musicData.start);
+  if (musicData.playing) {
+    document.querySelector(".music").classList.add("playing");
+  } else {
+    document.querySelector(".music").classList.remove("playing");
+  }
+
+  manageMusic(musicData);
+  currentSongData = musicData;
 });
 
 /*****  USERS  ******/
@@ -299,7 +319,7 @@ shareButton.addEventListener("click", shareScreen);
 function shareScreen() {
   if (someoneStreaming) return;
   if (!myStreaming) {
-    navigator.mediaDevices.getDisplayMedia({ video: { height: { ideal: 1080 } }, audio: true }).then((stream) => {
+    navigator.mediaDevices.getDisplayMedia({ video: { height: { ideal: 720 } }, audio: true }).then((stream) => {
       myScreenStream = stream;
       users.forEach((user) => {
         if (user.id !== userConfig.id) {
@@ -375,7 +395,7 @@ function addMessage(message) {
   const messageTime = document.createElement("span");
   const messageContent = document.createElement("p");
   const momentDate = new Date(message.moment);
-  messageOwner.innerText = users.find((usr) => usr.id === message.id)?.name;
+  messageOwner.innerText = message.id == 1 ? "Botardophite v2" : users.find((usr) => usr.id === message.id)?.name;
   messageOwner.classList.add(`text-${users.find((usr) => usr.id === message.id)?.color}`);
   messageTime.innerText = `${momentDate.getHours() < 10 ? "0" + momentDate.getHours() : momentDate.getHours()}:${
     momentDate.getMinutes() < 10 ? "0" + momentDate.getMinutes() : momentDate.getMinutes()
@@ -385,4 +405,56 @@ function addMessage(message) {
   newMessage.append(messageTime);
   newMessage.append(messageContent);
   messages.append(newMessage);
+}
+
+document.getElementById("music-pause").addEventListener("click", () => {
+  socket.emit("pause-music");
+});
+
+document.getElementById("music-play").addEventListener("click", () => {
+  socket.emit("play-music", video.currentTime);
+});
+
+function getBufferIntoMediaStream(buffer, start) {
+  video.src = window.URL.createObjectURL(new Blob([buffer], { type: "audio/mpeg" }));
+  video.addEventListener("loadedmetadata", () => {
+    video.currentTime = (new Date().getTime() - new Date(start).getTime()) / 1000;
+    console.log((new Date().getTime() - new Date(start).getTime()) / 1000, video.currentTime);
+    video.play();
+  });
+}
+
+function manageMusic(musicData) {
+  const fac = new FastAverageColor();
+  if (musicData.thumbnail) {
+    document.querySelector(".music img").src = "https://cors-anywhere.herokuapp.com/" + musicData.thumbnail;
+    document.querySelector(".music img").setAttribute("crossOrigin", "");
+    document.querySelector(".music .music-img i").classList.add("d-none");
+    document.querySelector(".music img").classList.remove("d-none");
+    fac
+      .getColorAsync(document.querySelector(".music img"))
+      .then((color) => {
+        document.querySelector(".music").style.backgroundColor = color.rgba;
+        document.querySelector(
+          ".music-img .gradient"
+        ).style.background = `linear-gradient(90deg, ${color.rgba} 0%, rgba(255,255,255,0) 100%)`;
+        if (color.isDark) document.querySelector(".music").classList.remove("light");
+        else document.querySelector(".music").classList.add("light");
+        document.querySelector(".music-info h4").innerText = musicData.title;
+        document.querySelector(".music-info h6").innerHTML = `<a target="_blank" href="${musicData.singer.ref}">${
+          musicData.singer.name
+        } ${musicData.singer.verified ? '<i class="fas fa-check-circle"></i></a>' : ""}`;
+        if (musicData.playing) document.querySelector(".music").classList.add("playing");
+      })
+      .catch(function (e) {
+        console.log(e);
+      });
+    fac.destroy();
+  } else {
+    document.querySelector(".music-info h4").innerText = musicData.title;
+    document.querySelector(".music-info h6").innerHTML = `<a target="_blank" href="${musicData.singer.ref}">${
+      musicData.singer.name
+    } ${musicData.singer.verified ? '<i class="fas fa-check-circle"></i></a>' : ""}`;
+    if (musicData.playing) document.querySelector(".music").classList.add("playing");
+  }
 }

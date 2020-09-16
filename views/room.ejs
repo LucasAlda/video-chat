@@ -8,7 +8,7 @@
     <title>Room</title>
   </head>
   <body>
-    <div class="container">
+    <div class="container open-sidebar">
       <div class="main">
         <div class="main-videos">
           <div class="videos-container">
@@ -55,6 +55,29 @@
           <h6>Chat</h6>
           <i class="fas fa-times"></i>
         </div>
+        <div class="sidebar-subheader">
+          <div class="music">
+            <div class="music-info">
+              <h4 class="title">Nada Sonando</h4>
+              <h6 class="singer">Unknown</h6>
+              <div class="music-controls">
+                <button id="music-play"><i class="fas fa-play"></i></button>
+                <button id="music-pause"><i class="fas fa-pause"></i></button>
+                <i class="fas fa-volume-up"></i>
+                <div class="custom-slider" id="music-volume-slider">
+                  <div class="range"></div>
+                </div>
+                <!-- <input type="range" class="slider" min="1" max="100" value="50" id="volumen" /> -->
+              </div>
+            </div>
+            <div class="music-img">
+              <img class="d-none" />
+              <i class="fas fa-compact-disc"> </i>
+              <div class="gradient"></div>
+            </div>
+          </div>
+          <video id="video" style="height: 0; width: 0"></video>
+        </div>
         <div class="sidebar-chat">
           <ul class="messages" id="messages"></ul>
         </div>
@@ -98,7 +121,7 @@
     <script src="ui.js" defer></script>
     <script src="script.js" defer></script>
     <script src="https://kit.fontawesome.com/e54da704e9.js" crossorigin="anonymous"></script>
-    <audio id="video"></audio>
+    <script src="https://unpkg.com/fast-average-color/dist/index.min.js"></script>
     <script></script>
   </body>
 </html>
