@@ -8,10 +8,7 @@ const { v4: uuidV4 } = require("uuid");
 const fs = require("fs");
 
 const rooms = {};
-const currentSong = {};
 const lists = {};
-
-let musicEmmiter;
 
 app.set("view engine", "ejs");
 app.use(express.static("public"));
@@ -99,8 +96,6 @@ io.on("connection", (socket) => {
 
       switch (command) {
         case firstLetter + "play":
-          if (!musicEmmiter) musicEmmiter = socket.id;
-
           let musicData = {};
 
           if (args.trimStart().length > 0) {
@@ -142,7 +137,7 @@ async function playFollowingSong(roomId) {
     io.in(roomId).emit("message", { message: "No caze que temita queres", id: 1, moment: new Date() });
     return;
   }
-  musicData = lists[roomId][0];
+  let musicData = lists[roomId][0];
 
   const video = yt(musicData.link, {
     filter: "audioonly",
@@ -159,6 +154,8 @@ async function playFollowingSong(roomId) {
     id: 1,
     moment: new Date(),
   });
+
+  lists[roomId].shift();
 }
 
 server.listen(process.env.PORT || 3000, () => {

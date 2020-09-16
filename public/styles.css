@@ -229,6 +229,7 @@ body {
   color: #fff;
   border: none;
   background: transparent;
+  cursor: pointer;
 }
 
 .music.light .music-info .music-controls button {

@@ -164,7 +164,7 @@ socket.on("play-music", (time) => {
 });
 
 socket.on("music", async (musicData) => {
-  if (musicData.title !== currentSongData?.title) getBufferIntoMediaStream(musicData.song, musicData.start);
+  if (musicData.title !== currentSongData?.title) getBufferIntoBlob(musicData.song, musicData.start);
   if (musicData.playing) {
     document.querySelector(".music").classList.add("playing");
   } else {
@@ -415,7 +415,7 @@ document.getElementById("music-play").addEventListener("click", () => {
   socket.emit("play-music", video.currentTime);
 });
 
-function getBufferIntoMediaStream(buffer, start) {
+function getBufferIntoBlob(buffer, start) {
   video.src = window.URL.createObjectURL(new Blob([buffer], { type: "audio/mpeg" }));
   video.addEventListener("loadedmetadata", () => {
     video.currentTime = (new Date().getTime() - new Date(start).getTime()) / 1000;
@@ -431,6 +431,11 @@ function manageMusic(musicData) {
     document.querySelector(".music img").setAttribute("crossOrigin", "");
     document.querySelector(".music .music-img i").classList.add("d-none");
     document.querySelector(".music img").classList.remove("d-none");
+    document.querySelector(".music-info h4").innerText = musicData.title;
+    document.querySelector(".music-info h6").innerHTML = `<a target="_blank" href="${musicData.singer.ref}">${
+      musicData.singer.name
+    } ${musicData.singer.verified ? '<i class="fas fa-check-circle"></i></a>' : ""}`;
+    if (musicData.playing) document.querySelector(".music").classList.add("playing");
     fac
       .getColorAsync(document.querySelector(".music img"))
       .then((color) => {
@@ -440,11 +445,6 @@ function manageMusic(musicData) {
         ).style.background = `linear-gradient(90deg, ${color.rgba} 0%, rgba(255,255,255,0) 100%)`;
         if (color.isDark) document.querySelector(".music").classList.remove("light");
         else document.querySelector(".music").classList.add("light");
-        document.querySelector(".music-info h4").innerText = musicData.title;
-        document.querySelector(".music-info h6").innerHTML = `<a target="_blank" href="${musicData.singer.ref}">${
-          musicData.singer.name
-        } ${musicData.singer.verified ? '<i class="fas fa-check-circle"></i></a>' : ""}`;
-        if (musicData.playing) document.querySelector(".music").classList.add("playing");
       })
       .catch(function (e) {
         console.log(e);
